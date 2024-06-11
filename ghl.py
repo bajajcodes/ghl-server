@@ -1,12 +1,18 @@
 import json
 import os
+from datetime import datetime
 
 import requests
+from dotenv import load_dotenv
 
-gohighlevel_url = os.environ.get("GHL_API_URL")
-calendarId = os.environ.get("GHL_CALENDAR_ID")
-timezone = os.environ.get("GHL_CALENDAR_TIMEZONE")
-ghl_token=os.environ.get("GHL_BEARER_TOKEN")
+from utils import get_current_and_future_epoch_america_new_york_milliseconds
+
+load_dotenv()
+
+gohighlevel_url = os.getenv("GHL_API_URL")
+calendarId = os.getenv("GHL_CALENDAR_ID")
+timezone = os.getenv("GHL_CALENDAR_TIMEZONE")
+ghl_token=os.getenv("GHL_BEARER_TOKEN")
 headers = {
   'Version': '2021-04-15',
   'Content-Type': 'application/json',
@@ -47,3 +53,38 @@ async def create_appointment(phone, selected_slot, logger):
   except requests.RequestException as e:
         logger.error(f"Error creating appointment on GoHighLevel: {e}")
         raise  # Re-raise the exception so it can be handled further
+
+async def fetch_available_slots(logger):
+
+    try:
+        start_epoch, end_epoch = get_current_and_future_epoch_america_new_york_milliseconds()
+        url = f"{gohighlevel_url}/slots?calendarId={calendarId}&startDate={start_epoch}&endDate={end_epoch}&timezone=America/New_York"
+        headers = {'Authorization': f'Bearer {ghl_token}'}
+
+        logger.info(f"Fetching slots from: {url}")  # Log the request URL
+
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            data = response.json()
+            today = datetime.now().strftime("%Y-%m-%d")
+            slots = data.get(today, {}).get("slots", [])
+            logger.info(f"Successfully fetched slots: {slots[:2]}")  # Log the fetched slots
+            return {"message": "Available slots", "available_slots": slots[:2]}
+        else:
+            error_msg = f"Error fetching slots: {response.status_code} - {response.text}"
+            logger.error(error_msg)
+            return {"message": "No Available slots", "available_slots": []}  
+
+    except requests.RequestException as e:
+        logger.exception("RequestException while fetching slots:", exc_info=True)  # Log the exception with traceback
+        raise  # Re-raise the exception to let the caller handle it
+
+    except KeyError as e:
+        logger.exception("KeyError while extracting slots from response:", exc_info=True)
+        raise  # Re-raise the exception
+
+    except Exception as e:  # Catch any other unexpected exceptions
+        logger.exception("Unexpected error while fetching slots:", exc_info=True)
+        raise
+
