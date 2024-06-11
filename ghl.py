@@ -19,13 +19,14 @@ headers = {
   'Authorization': f'Bearer {ghl_token}'  
 }
 
-async def create_appointment(phone, selected_slot, logger):
+async def create_appointment(phone, full_name, selected_slot, logger):
   try:
       logger.info("selected_slot: {}".format(selected_slot))
       payload = json.dumps({
         "calendarId": calendarId,
         "selectedTimezone": timezone,
         "selectedSlot": selected_slot,
+        "fullName": full_name,
         "phone": phone
       })
       response = requests.post(gohighlevel_url, headers=headers, data=payload)

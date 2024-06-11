@@ -20,6 +20,10 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+@app.get("/")
+async def hello_world(request: Request):
+     return "Hello World"
+
 @app.post("/")
 async def process_request(request: Request):
     """
@@ -46,6 +50,7 @@ async def process_request(request: Request):
     function_arguments = tool_call.get("function", {}).get("arguments", {})  # Safely access arguments
     mobile_number = function_arguments.get("mobileNumber")
     user_selected_slot = function_arguments.get("selectedSlot")
+    full_name = function_arguments.get("fullName")
 
     # Log extracted data
     logger.info(f"Extracted data: toolCallId={tool_call_id}, mobileNumber={mobile_number}, selectedSlot={user_selected_slot}")
@@ -59,7 +64,7 @@ async def process_request(request: Request):
     try:
         selected_slot = await create_chat_completion(user_selected_slot, logger)
         logger.info(f"Received response from OpenAI API: {selected_slot}")
-        scheduled_appointment_response = await create_appointment(mobile_number, selected_slot, logger)
+        scheduled_appointment_response = await create_appointment(mobile_number, full_name, selected_slot, logger)
         scheduled_appointment_response_message = scheduled_appointment_response["message"]
         formatted_response = {
         "results": [
@@ -100,9 +105,10 @@ async def fetchSlotsAndBookAppointment(request: Request):
         function_arguments = tool_call.get("function", {}).get("arguments", {})
         mobile_number = function_arguments.get("mobileNumber")
         user_selected_slot = function_arguments.get("selectedSlot")
+        full_name = function_arguments.get("fullName")
 
         if user_selected_slot:
-                    scheduled_appointment_response = await create_appointment(mobile_number, user_selected_slot, logger)
+                    scheduled_appointment_response = await create_appointment(mobile_number, full_name, user_selected_slot, logger)
                     scheduled_appointment_response_message = scheduled_appointment_response["message"]
                     formatted_response = {
                     "results": [
