@@ -29,6 +29,7 @@ async def create_appointment(phone, first_name, last_name, selected_slot, logger
         "selectedSlot": selected_slot,
         "firstName": first_name,
         "lastName": last_name,
+        "Phone to text": phone,
         "phone": phone
       })
       response = requests.post(gohighlevel_url, headers=headers, data=payload)
