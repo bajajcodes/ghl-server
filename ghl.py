@@ -19,15 +19,18 @@ headers = {
   'Authorization': f'Bearer {ghl_token}'  
 }
 
-async def create_appointment(phone, full_name, selected_slot, logger):
+async def create_appointment(phone, first_name, last_name, selected_slot, logger):
   try:
       logger.info("selected_slot: {}".format(selected_slot))
       payload = json.dumps({
         "calendarId": calendarId,
         "selectedTimezone": timezone,
         "selectedSlot": selected_slot,
-        "fullName": full_name,
-        "phone": phone
+        "firstName": first_name,
+        "lastName": last_name,
+        #this name is already configured as this by @meena
+        #untill the demo
+        "Phone to text": phone
       })
       response = requests.post(gohighlevel_url, headers=headers, data=payload)
       response_data = response.json() 
@@ -70,8 +73,13 @@ async def fetch_available_slots(logger):
             data = response.json()
             today = datetime.now().strftime("%Y-%m-%d")
             slots = data.get(today, {}).get("slots", [])
-            logger.info(f"Successfully fetched slots: {slots[:2]}")  # Log the fetched slots
-            return {"message": "Available slots", "available_slots": slots[:2]}
+            if today in data:
+                if slots:
+                    logger.info(f"Successfully fetched slots: {slots[:2]}")  # Log the fetched slots
+                    return {"message": "Available slots", "available_slots": slots[:2]}
+            # This else block is for both cases: no data for today OR empty slots list    
+            logger.info("No slots available for today") 
+            return {"message": "No Available slots", "available_slots": []}
         else:
             error_msg = f"Error fetching slots: {response.status_code} - {response.text}"
             logger.error(error_msg)

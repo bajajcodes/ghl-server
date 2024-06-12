@@ -104,11 +104,12 @@ async def fetchSlotsAndBookAppointment(request: Request):
 
         function_arguments = tool_call.get("function", {}).get("arguments", {})
         mobile_number = function_arguments.get("mobileNumber")
-        user_selected_slot = function_arguments.get("selectedSlot")
-        full_name = function_arguments.get("fullName")
+        user_selected_slot = function_arguments.get("userSelectedSlot")
+        first_name = function_arguments.get("firstName")
+        last_name = function_arguments.get("lastName")
 
         if user_selected_slot:
-                    scheduled_appointment_response = await create_appointment(mobile_number, full_name, user_selected_slot, logger)
+                    scheduled_appointment_response = await create_appointment(mobile_number, first_name,last_name, user_selected_slot, logger)
                     scheduled_appointment_response_message = scheduled_appointment_response["message"]
                     formatted_response = {
                     "results": [
