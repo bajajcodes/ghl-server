@@ -6,7 +6,8 @@ import requests
 from dotenv import load_dotenv
 
 from utils import (get_current_and_future_epoch_america_new_york_milliseconds,
-                   get_current_date_america_new_york)
+                   get_current_date_america_new_york,
+                   get_first_and_third_slots)
 
 load_dotenv()
 
@@ -20,17 +21,18 @@ headers = {
   'Authorization': f'Bearer {ghl_token}'  
 }
 
-async def create_appointment(phone, first_name, last_name, selected_slot, logger):
+# TODO: refactor code for maintainibility
+async def create_appointment(appointment_data, logger):
   try:
-      logger.info("selected_slot: {}".format(selected_slot))
+      logger.info("selected_slot: {}".format(appointment_data["selected_slot"]))
       payload = json.dumps({
         "calendarId": calendarId,
         "selectedTimezone": timezone,
-        "selectedSlot": selected_slot,
-        "firstName": first_name,
-        "lastName": last_name,
-        "Phone to text": phone,
-        "phone": phone
+        "selectedSlot": appointment_data["selected_slot"],
+        "firstName": appointment_data["first_name"],
+        "lastName": appointment_data["last_name"],
+        "Phone to text": appointment_data["phone"],
+        "phone": appointment_data["phone"]
       })
       response = requests.post(gohighlevel_url, headers=headers, data=payload)
       response_data = response.json() 
@@ -43,7 +45,9 @@ async def create_appointment(phone, first_name, last_name, selected_slot, logger
       elif response.status_code == 422:
             if rule == "invalid":
                 logger.warning("Slot not available. GoHighLevel API response: %s", response_data)
-                return {"message": slot_message}
+                available_slots_response = await fetch_available_slots(selected_slot=appointment_data["selected_slot"], logger=logger)
+                logger.info("Available Slots %s", available_slots_response)
+                return available_slots_response
             elif rule == "iso8601":
                 logger.warning("Invalid slot format. GoHighLevel API response: %s", response_data)
                 return {"message": slot_message}
@@ -58,10 +62,10 @@ async def create_appointment(phone, first_name, last_name, selected_slot, logger
         logger.error(f"Error creating appointment on GoHighLevel: {e}")
         raise  # Re-raise the exception so it can be handled further
 
-async def fetch_available_slots(logger):
+async def fetch_available_slots(selected_slot,logger):
 
     try:
-        start_epoch, end_epoch = get_current_and_future_epoch_america_new_york_milliseconds()
+        start_epoch, end_epoch = get_current_and_future_epoch_america_new_york_milliseconds(selected_slot)
         url = f"{gohighlevel_url}/slots?calendarId={calendarId}&startDate={start_epoch}&endDate={end_epoch}&timezone=America/New_York"
         headers = {'Authorization': f'Bearer {ghl_token}'}
 
@@ -76,8 +80,9 @@ async def fetch_available_slots(logger):
             logger.info("Today date available for {} and slots are {}".format(today, slots))
             if today in data:
                 if slots:
-                    logger.info(f"Successfully fetched slots: {slots[:2]}")  # Log the fetched slots
-                    return {"message": "Available slots", "available_slots": slots[:2]}
+                    filtered_slots = get_first_and_third_slots(slots=slots)
+                    logger.info(f"Successfully fetched slots: {filtered_slots}")  # Log the fetched slots
+                    return {"message": "Available slots", "available_slots": filtered_slots}
             # This else block is for both cases: no data for today OR empty slots list    
             logger.info("No slots available for today") 
             return {"message": "No Available slots", "available_slots": []}

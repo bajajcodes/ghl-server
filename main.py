@@ -22,7 +22,7 @@ app = FastAPI()
 
 @app.get("/")
 async def hello_world(request: Request):
-     await fetch_available_slots(logger)
+     await fetch_available_slots(logger=logger, selected_slot=None)
 
 @app.post("/")
 async def process_request(request: Request):
@@ -113,26 +113,51 @@ async def fetchSlotsAndBookAppointment(request: Request):
         if selected_slot and user_suggested_slot:
                     selected_slot = await create_chat_completion(selected_slot, logger)
 
+# TODO: make the code readable and maintainable
         if selected_slot:
-                    logger.info("User Info mobile_number:{} first_name:{} last_name:{} selected_slot:{} user_selected_slot:{} user_suggested_slot:{}".format(mobile_number, first_name, last_name, selected_slot, user_selected_slot, user_suggested_slot))
-                    scheduled_appointment_response = await create_appointment(mobile_number, first_name,last_name, selected_slot, logger)
-                    scheduled_appointment_response_message = scheduled_appointment_response["message"]
+
+                    logger.info("User Info: %s", {
+                        "mobile_number": mobile_number,
+                        "first_name": first_name,
+                        "last_name": last_name,
+                        "selected_slot": selected_slot,
+                        "user_selected_slot": user_selected_slot,
+                        "user_suggested_slot": user_suggested_slot
+                    })  # Log user info as a dictionary
+
+                    scheduled_appointment_response = await create_appointment({
+                        "phone": mobile_number,
+                        "first_name": first_name,
+                        "last_name": last_name,
+                        "selected_slot": selected_slot
+                    }, logger)
+
+                    logger.info("Appointment Response: %s", scheduled_appointment_response)  # Log the entire response
+
+                    # Extract message and available_slots safely (with defaults)
+                    appointment_message = scheduled_appointment_response.get("message", "Something Went Wrong")
+                    available_slots = scheduled_appointment_response.get("available_slots", [])  
+
+                    logger.info("Slots: %s Message: %s", available_slots, appointment_message)
+
+
                     formatted_response = {
-                    "results": [
-                        {
-                            "toolCallId": tool_call_id,
-                            "result": scheduled_appointment_response_message,
-                        }
-                    ]
+                        "results": [
+                            {
+                                "toolCallId": tool_call_id,
+                                "result": available_slots if available_slots else appointment_message,
+                            }
+                        ]
                     }
-                    logger.info(formatted_response)
+                    logger.info("Formatted Response: %s", formatted_response)
+
                     #TODO: check vapi support for 4xx status codes
                     return JSONResponse(
                         content=formatted_response, 
                         status_code=200
                     )
 
-        available_slots_response = await fetch_available_slots(logger)
+        available_slots_response = await fetch_available_slots(logger=logger, selected_slot=None)
         available_slots = available_slots_response["available_slots"]
         available_slots_message = available_slots_response["message"]
         formatted_response = {
@@ -156,13 +181,6 @@ async def fetchSlotsAndBookAppointment(request: Request):
             status_code=500
         )
 
-# async def main():
-#     try:
-#         user_message = "Tomorrow Two PM"  # Example user message
-#         response_content = await create_chat_completion(user_message, logger)
-#         logger.info("Received response from OpenAI API, {}".format(response_content))
-#     except Exception as e:  # Broad exception handling
-#         logger.critical("An unexpected error occurred: %s", e)
 
 
 if __name__ == "__main__":
