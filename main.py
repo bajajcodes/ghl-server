@@ -22,7 +22,7 @@ app = FastAPI()
 
 @app.get("/")
 async def hello_world(request: Request):
-     return "Hello World"
+     await fetch_available_slots(logger)
 
 @app.post("/")
 async def process_request(request: Request):
@@ -103,13 +103,19 @@ async def fetchSlotsAndBookAppointment(request: Request):
         tool_call_id = tool_call.get("id")
 
         function_arguments = tool_call.get("function", {}).get("arguments", {})
-        mobile_number = function_arguments.get("mobileNumber")
         user_selected_slot = function_arguments.get("userSelectedSlot")
+        user_suggested_slot = function_arguments.get("userSuggestedSlot")
+        selected_slot = user_selected_slot if user_selected_slot else user_suggested_slot
+        mobile_number = function_arguments.get("mobileNumber")
         first_name = function_arguments.get("firstName")
         last_name = function_arguments.get("lastName")
+        
+        if selected_slot and user_suggested_slot:
+                    selected_slot = await create_chat_completion(selected_slot, logger)
 
-        if user_selected_slot:
-                    scheduled_appointment_response = await create_appointment(mobile_number, first_name,last_name, user_selected_slot, logger)
+        if selected_slot:
+                    logger.info("User Info mobile_number:{} first_name:{} last_name:{} selected_slot:{} user_selected_slot:{} user_suggested_slot:{}".format(mobile_number, first_name, last_name, selected_slot, user_selected_slot, user_suggested_slot))
+                    scheduled_appointment_response = await create_appointment(mobile_number, first_name,last_name, selected_slot, logger)
                     scheduled_appointment_response_message = scheduled_appointment_response["message"]
                     formatted_response = {
                     "results": [
@@ -119,6 +125,8 @@ async def fetchSlotsAndBookAppointment(request: Request):
                         }
                     ]
                     }
+                    logger.info(formatted_response)
+                    #TODO: check vapi support for 4xx status codes
                     return JSONResponse(
                         content=formatted_response, 
                         status_code=200
@@ -126,14 +134,17 @@ async def fetchSlotsAndBookAppointment(request: Request):
 
         available_slots_response = await fetch_available_slots(logger)
         available_slots = available_slots_response["available_slots"]
+        available_slots_message = available_slots_response["message"]
         formatted_response = {
         "results": [
             {
                 "toolCallId": tool_call_id,
-                "result": available_slots,
+                "result": available_slots if available_slots else available_slots_message,
             }
         ]
         }
+        logger.info(formatted_response)
+        #TODO: check vapi support for 4xx status codes
         return JSONResponse(
             content=formatted_response, 
             status_code=200

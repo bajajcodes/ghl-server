@@ -3,6 +3,11 @@ from datetime import datetime, timedelta
 import pytz
 
 
+def get_current_date_america_new_york():
+    tz = pytz.timezone('America/New_York')
+    now = datetime.now(tz)
+    return now.strftime("%Y-%m-%d")
+
 def get_current_time_america_new_york():
     tz = pytz.timezone('America/New_York')
     now = datetime.now(tz)

@@ -5,7 +5,8 @@ from datetime import datetime
 import requests
 from dotenv import load_dotenv
 
-from utils import get_current_and_future_epoch_america_new_york_milliseconds
+from utils import (get_current_and_future_epoch_america_new_york_milliseconds,
+                   get_current_date_america_new_york)
 
 load_dotenv()
 
@@ -28,9 +29,7 @@ async def create_appointment(phone, first_name, last_name, selected_slot, logger
         "selectedSlot": selected_slot,
         "firstName": first_name,
         "lastName": last_name,
-        #this name is already configured as this by @meena
-        #untill the demo
-        "Phone to text": phone
+        "phone": phone
       })
       response = requests.post(gohighlevel_url, headers=headers, data=payload)
       response_data = response.json() 
@@ -71,8 +70,9 @@ async def fetch_available_slots(logger):
 
         if response.status_code == 200:
             data = response.json()
-            today = datetime.now().strftime("%Y-%m-%d")
+            today = get_current_date_america_new_york()
             slots = data.get(today, {}).get("slots", [])
+            logger.info("Today date available for {} and slots are {}".format(today, slots))
             if today in data:
                 if slots:
                     logger.info(f"Successfully fetched slots: {slots[:2]}")  # Log the fetched slots
