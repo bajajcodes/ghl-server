@@ -13,6 +13,29 @@ def get_current_time_america_new_york():
     now = datetime.now(tz)
     return now.strftime("%Y-%m-%d %H:%M:%S %Z")
 
+def get_date_time_in_epoch_ms(date_time_str):
+    tz = pytz.timezone('America/New_York')
+    datetime_edt = datetime.fromisoformat(date_time_str)
+    datetime_new_york = datetime_edt.astimezone(tz)
+    print(datetime_edt)
+    print(datetime_new_york)
+    epoch_ms = int(datetime_new_york.timestamp()) * 1000
+    print(epoch_ms)
+    return epoch_ms
+
+def epoch_ms_to_date_time_str(epoch_ms, tz_name='America/New_York'):
+    tz = pytz.timezone(tz_name)
+    dt = datetime.fromtimestamp(epoch_ms / 1000, tz=tz)
+    return dt.isoformat()
+
+def filter_slots_by_time_range(slots, start_epoch_ms, end_epoch_ms):
+    filtered_slots = []
+    for slot in slots:
+        slot_epoch_ms = get_date_time_in_epoch_ms(slot)
+        if start_epoch_ms <= slot_epoch_ms <= end_epoch_ms:
+            filtered_slots.append(slot)
+    return filtered_slots
+
 def get_current_and_future_epoch_america_new_york_milliseconds(selected_slot=None):
     tz = pytz.timezone('America/New_York')
 
