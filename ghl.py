@@ -5,7 +5,8 @@ from datetime import datetime
 import requests
 from dotenv import load_dotenv
 
-from utils import (get_current_and_future_epoch_america_new_york_milliseconds,
+from utils import (filter_slots_by_time_range,
+                   get_current_and_future_epoch_america_new_york_milliseconds,
                    get_current_date_america_new_york,
                    get_first_and_third_slots)
 
@@ -78,9 +79,11 @@ async def fetch_available_slots(selected_slot,logger):
             today = get_current_date_america_new_york()
             slots = data.get(today, {}).get("slots", [])
             logger.info("Today date available for {} and slots are {}".format(today, slots))
+            time_range_filtered_slots = filter_slots_by_time_range(slots=slots, start_epoch_ms=start_epoch, end_epoch_ms=end_epoch)
+            logger.info("Today(Time Range Filtered slots) date available for {} and slots are {}".format(today, time_range_filtered_slots))
             if today in data:
-                if slots:
-                    filtered_slots = get_first_and_third_slots(slots=slots)
+                if time_range_filtered_slots:
+                    filtered_slots = get_first_and_third_slots(slots=time_range_filtered_slots)
                     logger.info(f"Successfully fetched slots: {filtered_slots}")  # Log the fetched slots
                     return {"message": "Available slots", "available_slots": filtered_slots}
             # This else block is for both cases: no data for today OR empty slots list    
