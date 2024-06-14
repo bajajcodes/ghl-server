@@ -79,7 +79,8 @@ async def fetch_available_slots(selected_slot,logger):
             today = get_current_date_america_new_york()
             slots = data.get(today, {}).get("slots", [])
             logger.info("Today date available for {} and slots are {}".format(today, slots))
-            time_range_filtered_slots = filter_slots_by_time_range(slots=slots, start_epoch_ms=start_epoch, end_epoch_ms=end_epoch)
+            # if selected_slot is not provided don't filter slots
+            time_range_filtered_slots = filter_slots_by_time_range(slots=slots, start_epoch_ms=start_epoch, end_epoch_ms=end_epoch) if selected_slot else slots
             logger.info("Today(Time Range Filtered slots) date available for {} and slots are {}".format(today, time_range_filtered_slots))
             if today in data:
                 if time_range_filtered_slots:
