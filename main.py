@@ -41,11 +41,13 @@ async def fetchSlotsAndBookAppointment(request: Request):
     try:
         request_body = await request.json()
 
+        # TODO: logger required details only
         logger.info(
             f"Received POST request: method={request.method}, path={request.url.path}, "
             f"body={request_body}"
         )
         tool_calls = request_body["message"]["toolCalls"]
+        # TODO: check vapi use of 400 status code
         if not tool_calls:
             return JSONResponse(
                 content={

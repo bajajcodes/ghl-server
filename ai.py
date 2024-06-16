@@ -6,11 +6,10 @@ from openai import OpenAI
 from prompts import SYSTEM_PROMPT, USER_PROMPT
 from utils import get_current_time_america_new_york, replace_placeholders
 
-load_dotenv() 
+load_dotenv()
 
-# client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-# openai.api_key=os.environ.get("OPENAI_API_KEY")
 client = OpenAI()
+
 
 async def create_chat_completion(user_message, logger):
     now = get_current_time_america_new_york()
