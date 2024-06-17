@@ -36,7 +36,10 @@ class GoHighLevelClient:
 
         # Check if calendar_id and auth_token are available
         if not self.calendar_id or not self.auth_token:
-            return "Missing Configuration (CALENDAR_ID or AUTH_TOKEN)", None
+            raise HTTPException(
+                status_code=500,  # Internal Server Error
+                detail="Missing Configuration (CALENDAR_ID or AUTH_TOKEN)",
+            )
 
         url = f"{self.base_url}/appointments/slots?calendarId={self.calendar_id}&startDate={start_date_epoch_ms}&endDate={end_date_epoch_ms}&timezone={self.timezone}"
         headers = {"Authorization": f"Bearer {self.auth_token}"}
@@ -57,7 +60,8 @@ class GoHighLevelClient:
             else:  # Unexpected error
                 return "Unknown Error", None
 
-        except requests.RequestException as e:
+        except Exception as e:
+            # TODO: handle exception
             print(f"Request Error: {e}")
             return "Request Error", None
 

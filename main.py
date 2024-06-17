@@ -34,15 +34,15 @@ async def hello_webhook(request: Request):
 
 @app.post("/fetchslots")
 async def fetchSlots(request: Request):
+    tool_call_id = None
     try:
+        # Process request and get slots
         tool_call = await process_request(request)
         tool_call_id = tool_call.get("id")
-
         edt_timezone = pytz.timezone("America/New_York")
         current_datetime_edt = datetime.now(edt_timezone)
-
         picked_slots = await fetch_and_process_slots(current_datetime_edt, edt_timezone)
-        # TODO: send message and available_slots in result
+        # Success response
         return JSONResponse(
             content={
                 "results": [
@@ -57,11 +57,30 @@ async def fetchSlots(request: Request):
             },
             status_code=200,
         )
-    except HTTPException as e:
-        raise e  # Re-raise HTTPExceptions to be handled by FastAPI
-    except Exception as e:
+    except HTTPException as he:  # Catch specific HTTPException
+        logger.critical(f"An HTTPException occurred: {he}")
+        return JSONResponse(
+            content={
+                "results": [{"toolCallId": None, "error": {"message": he.detail}}]
+            },
+            status_code=he.status_code,
+        )
+    except Exception as e:  # Catch all other exceptions
         logger.critical(f"An unexpected error occurred: {e}")
-        return JSONResponse(content={"error": "Internal Server Error"}, status_code=500)
+        error_message = (
+            "Something went wrong while fetching slots."
+            if tool_call_id
+            else "Internal Server Error"
+        )
+        status_code = 200 if tool_call_id else 500
+        return JSONResponse(
+            content={
+                "results": [
+                    {"toolCallId": tool_call_id, "error": {"message": error_message}}
+                ]
+            },
+            status_code=status_code,
+        )
 
 
 @app.post("/bookslot")

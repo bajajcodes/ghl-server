@@ -21,7 +21,8 @@ async def process_request(request: Request):
         HTTPException: If the request body is missing or has an invalid format.
     """
     request_body = await request.json()
-    tool_calls = request_body.get("message", {}).get("toolCalls", [])
+    message = request_body.get("message", {})
+    tool_calls = message.get("toolCalls", [])
 
     if not tool_calls:
         raise HTTPException(
