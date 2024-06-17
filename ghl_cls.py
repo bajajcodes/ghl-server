@@ -83,21 +83,18 @@ class GoHighLevelClient:
                 - booking_result (dict): API response data if successful, or an error message.
                 - status_code (int): HTTP status code of the response.
         """
-        # Get calendarId and selectedTimezone from environment variables if not provided
-        calendar_id = os.getenv("CALENDAR_ID")
-        selected_timezone = os.getenv("TIMEZONE", "America/New_York")
 
-        # Check if calendarId and selectedTimezone are available in environment variables
-        if not calendar_id or not selected_timezone:
+        # Check if calendarId is available in environment variables
+        if not self.calendar_id:
             raise HTTPException(
                 status_code=500,
-                detail="Calendar ID or selected timezone is missing in environment variables.",
+                detail="Calendar ID is missing in environment variables.",
             )
 
         # Input validation (Simplified)
         payload_fields = {
-            "calendarId": calendar_id,
-            "selectedTimezone": selected_timezone,
+            "calendarId": self.calendar_id,
+            "selectedTimezone": self.timezone,
             "selectedSlot": selectedSlot,
             "phone": phone,
             "Phone to text": phoneToText,
@@ -114,15 +111,13 @@ class GoHighLevelClient:
 
         url = f"{self.base_url}/appointments"
         headers = {"Authorization": f"Bearer {self.auth_token}"}
-        payload = json.dumps(
-            {key: value for key, value in payload_fields.items() if value}
-        )
-
         try:
-            response = requests.request("POST", url, headers=headers, data=payload)
+            response = requests.request(
+                "POST", url, headers=headers, data=payload_fields
+            )
             if response.status_code == 200:  # Success
                 success_data = response.json()
-                return "Slot booked succesfully", response.status_code
+                return "Appointment booked succesfully", response.status_code
             elif response.status_code == 422:
                 error_data = response.json()
                 missing_fields = [
@@ -130,10 +125,10 @@ class GoHighLevelClient:
                     for field in ["calendarId", "selectedTimezone", "phone"]
                     if field in error_data
                 ]
-                if "selectedSlot" in error_data:
-                    return error_data["selectedSlot"]["message"], 422
-                elif missing_fields:
+                if missing_fields:
                     return f"Missing required fields: {', '.join(missing_fields)}", 422
+                elif "selectedSlot" in error_data:
+                    return error_data["selectedSlot"]["message"], 422
             else:  # Unexpected error
                 return "Unknown Error", None
 
