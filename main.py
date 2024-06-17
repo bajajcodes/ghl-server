@@ -6,8 +6,14 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
+from chat_gpt_agent import ChatGPTAgent, user_message
 from ghl_cls import GoHighLevelClient
-from utils.api import fetch_and_process_slots, process_request
+from utils.api import (
+    fetch_and_process_slots,
+    get_current_time_america_new_york,
+    process_request,
+    replace_placeholders,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -92,9 +98,31 @@ async def bookSlot(request: Request):
         tool_call_id = tool_call.get("id")
         function_arguments = tool_call.get("function", {}).get("arguments", {})
 
+        selected_slot_str = function_arguments.get("selectedSlot")
+        current_time_str = get_current_time_america_new_york()
+        final_user_prompt = replace_placeholders(
+            user_message, current_time_str, selected_slot_str
+        )
+        selected_slot_success, selected_slot = await ChatGPTAgent().extract_date_time(
+            final_user_prompt
+        )
+
+        if not selected_slot_success:
+            return JSONResponse(
+                content={
+                    "results": [
+                        {
+                            "toolCallId": tool_call_id,
+                            "result": {"message": selected_slot},
+                        }
+                    ]
+                },
+                status_code=400,
+            )
+
         # 2. Extract appointment details
         appointment_details = {
-            "selectedSlot": function_arguments.get("selectedSlot"),
+            "selectedSlot": selected_slot,
             "firstName": function_arguments.get("firstName"),
             "lastName": function_arguments.get("lastName"),
             "phone": function_arguments.get("phone"),

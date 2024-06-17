@@ -1,5 +1,6 @@
 from datetime import datetime, time, timedelta
 
+import pytz
 from fastapi import HTTPException, Request
 
 from ghl_cls import GoHighLevelClient
@@ -66,3 +67,15 @@ async def fetch_and_process_slots(current_datetime_edt, edt_timezone):
     slots = get_first_slots(result, formatted_start_date)
     picked_slots = [item[1] for item in slots]
     return picked_slots
+
+
+def get_current_time_america_new_york():
+    tz = pytz.timezone("America/New_York")
+    now = datetime.now(tz)
+    return now.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+
+def replace_placeholders(prompt, now, user_response):
+    prompt = prompt.replace("{{now}}", now)
+    prompt = prompt.replace("{{user_response}}", user_response)
+    return prompt
