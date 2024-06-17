@@ -5,7 +5,7 @@ from datetime import datetime
 import requests
 from dotenv import load_dotenv
 
-from utils import (
+from dump_utils import (
     filter_slots_by_time_range,
     get_current_and_future_epoch_america_new_york_milliseconds,
     get_current_date_america_new_york,

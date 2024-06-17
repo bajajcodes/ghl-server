@@ -3,8 +3,8 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 
+from dump_utils import get_current_time_america_new_york, replace_placeholders
 from prompts import SYSTEM_PROMPT, USER_PROMPT
-from utils import get_current_time_america_new_york, replace_placeholders
 
 load_dotenv()
 
