@@ -48,6 +48,9 @@ async def fetchSlots(request: Request):
         edt_timezone = pytz.timezone("America/New_York")
         current_datetime_edt = datetime.now(edt_timezone)
         picked_slots = await fetch_and_process_slots(current_datetime_edt, edt_timezone)
+        logger.info(
+            f"Current Date Tine is {current_datetime_edt} and Available slots are {picked_slots}"
+        )
         # Success response
         return JSONResponse(
             content={
@@ -103,7 +106,9 @@ async def bookSlot(request: Request):
         selected_slot_success, selected_slot = await ChatGPTAgent().extract_date_time(
             final_user_prompt
         )
-
+        logger.info(
+            f"Current Date Tine is {current_time_str} and selected_slot_success {selected_slot_success} and user selected slot {selected_slot}"
+        )
         if not selected_slot_success:
             return JSONResponse(
                 content={
@@ -137,7 +142,7 @@ async def bookSlot(request: Request):
             message = "Appointment booked successfully."
         else:
             message = result  # Use the API error message directly
-
+        logger.info(f"appointment booking result {result} and message {message}")
         return JSONResponse(
             content={
                 "results": [
