@@ -54,10 +54,7 @@ async def fetchSlots(request: Request):
                 "results": [
                     {
                         "toolCallId": tool_call_id,
-                        "result": {
-                            "message": "The following slots are available",
-                            "available_slots": picked_slots,
-                        },
+                        "result": picked_slots,
                     }
                 ]
             },

@@ -114,10 +114,11 @@ def get_next_business_day(current_datetime_edt, is_start_date=True):
     """
     # Get EDT timezone using pytz
     edt_timezone = pytz.timezone("America/New_York")
-
-    if current_datetime_edt.weekday() < 5 and is_within_business_hours(
-        current_datetime_edt
-    ):  # Weekday and within business hours
+    # INFO: temporarily removing current business hours logic
+    #  is_within_business_hours(
+    #     current_datetime_edt
+    # )
+    if current_datetime_edt.weekday() < 5:  # Weekday and within business hours
         return current_datetime_edt  # Return the current datetime as is
     else:
         # Calculate the next weekday
