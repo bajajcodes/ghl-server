@@ -99,13 +99,13 @@ def is_within_business_hours(dt):
     return dt.time() >= time(8, 0) and dt.time() <= time(17, 0)
 
 
-def get_next_business_day(current_datetime_edt, is_start_date=True):
+def get_next_business_day(datetime_edt, is_start_date=True):
     """
     Takes a datetime object in EDT timezone and returns the next available business day,
     with time set to 8:00 AM for start dates and 5:00 PM for end dates.
 
     Args:
-        current_datetime_edt: A datetime object representing the current time in EDT.
+        datetime_edt: A datetime object representing the current time in EDT.
         is_start_date: A boolean indicating whether to return the start time (8:00 AM)
                        or end time (5:00 PM) of the next business day (default: True).
 
@@ -114,20 +114,19 @@ def get_next_business_day(current_datetime_edt, is_start_date=True):
     """
     # Get EDT timezone using pytz
     edt_timezone = pytz.timezone("America/New_York")
+    # TODO: check for both date and time if less than current date and time
     # INFO: temporarily removing current business hours logic
     #  is_within_business_hours(
-    #     current_datetime_edt
+    #     datetime_edt
     # )
-    if current_datetime_edt.weekday() < 5:  # Weekday and within business hours
-        return current_datetime_edt  # Return the current datetime as is
+    if datetime_edt.weekday() < 5:  # Weekday and within business hours
+        return datetime_edt  # Return the current datetime as is
     else:
         # Calculate the next weekday
-        days_until_next_weekday = (7 - current_datetime_edt.weekday()) % 7
-        next_weekday = current_datetime_edt.date() + timedelta(
-            days=days_until_next_weekday
-        )
+        days_until_next_weekday = (7 - datetime_edt.weekday()) % 7
+        next_weekday = datetime_edt.date() + timedelta(days=days_until_next_weekday)
 
-        # Set the time to 8:00 AM for start dates, 5:00 PM for end dates
+        # Set the time to 8:00 AM for sta   rt dates, 5:00 PM for end dates
         if is_start_date:
             return edt_timezone.localize(
                 datetime.combine(next_weekday, time(8, 0))
