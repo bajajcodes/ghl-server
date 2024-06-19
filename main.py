@@ -20,7 +20,8 @@ from utils.api import (
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+    datefmt="%d-%b-%y %H:%M:%S",
+    filename="debug.log",
 )
 
 # Create logger instance
@@ -47,37 +48,33 @@ async def fetchSlots(request: Request):
         # Process request and get slots
         tool_call = await process_request(request)
         tool_call_id = tool_call.get("id")
+        logger.info("tool_call_id: {tool_call_id}")
         function_arguments = tool_call.get("function", {}).get("arguments", {})
-        selected_slot_str = function_arguments.get("selectedSlot")
+        user_selected_slot = function_arguments.get("selectedSlot")
         current_datetime_edt = datetime.now(edt_timezone)
         logger.info(
-            f"current_datetime_edt: {current_datetime_edt} selected_slot_str: {selected_slot_str}"
+            f"current_datetime: {current_datetime_edt} user_selected_slot: {user_selected_slot}"
         )
-        if selected_slot_str:
-            current_time_str = get_current_time_america_new_york()
+        if user_selected_slot:
+            current_date_time = get_current_time_america_new_york()
             final_user_prompt = replace_placeholders(
-                user_message, current_time_str, selected_slot_str
+                user_message, current_date_time, user_selected_slot
             )
-            logger.info(final_user_prompt)
-            selected_slot_success, selected_slot = (
+            logger.info(f"user_message {final_user_prompt}")
+            selected_slot_success, user_selected_slot_dt = (
                 await ChatGPTAgent().extract_date_time(final_user_prompt)
             )
             logger.info(
-                f"selected_slot_success: {selected_slot_success} selected_slot: {selected_slot}"
+                f"selected_slot_success: {selected_slot_success} user_selected_slot_date_time: {user_selected_slot_dt}"
             )
             current_datetime_edt = (
-                parse_datetime_string(selected_slot)
+                parse_datetime_string(user_selected_slot_dt)
                 if selected_slot_success
                 else current_datetime_edt
             )
 
         picked_slots = await fetch_and_process_slots(current_datetime_edt, edt_timezone)
-        logger.info(
-            f"selected_slot_str: {selected_slot_str} current_datetime_edt: {current_datetime_edt}"
-        )
-        logger.info(
-            f"Current Date Time is {current_datetime_edt} and Available slots are {picked_slots}"
-        )
+        logger.info(f"available slots are {picked_slots}")
         # Success response
         return JSONResponse(
             content={
@@ -91,7 +88,7 @@ async def fetchSlots(request: Request):
             status_code=200,
         )
     except HTTPException as he:  # Catch specific HTTPException
-        logger.critical(f"An HTTPException occurred: {he}")
+        logger.error(f"An HTTPException occurred: {he}", exc_info=True)
         return JSONResponse(
             content={
                 "results": [{"toolCallId": None, "error": {"message": he.detail}}]
@@ -99,12 +96,13 @@ async def fetchSlots(request: Request):
             status_code=he.status_code,
         )
     except Exception as e:  # Catch all other exceptions
-        logger.critical(f"An unexpected error occurred: {e}")
         error_message = (
             "Something went wrong while fetching slots."
             if tool_call_id
             else "Internal Server Error"
         )
+        logger.error(error_message, exc_info=True)
+        logger.critical(f"An unexpected error occurred: {e}")
         status_code = 200 if tool_call_id else 500
         return JSONResponse(
             content={
@@ -123,22 +121,23 @@ async def bookSlot(request: Request):
         # 1. Extract and validate request data
         tool_call = await process_request(request)
         tool_call_id = tool_call.get("id")
+        logger.info("tool_call_id: {tool_call_id}")
         function_arguments = tool_call.get("function", {}).get("arguments", {})
 
-        selected_slot_str = function_arguments.get("selectedSlot")
-        current_time_str = get_current_time_america_new_york()
+        user_selected_slot = function_arguments.get("selectedSlot")
+        current_date_time = get_current_time_america_new_york()
         final_user_prompt = replace_placeholders(
-            user_message, current_time_str, selected_slot_str
+            user_message, current_date_time, user_selected_slot
         )
         logger.info(
-            f"selected_slot_str: {selected_slot_str}, current_time_str: {current_time_str}"
+            f"user_selected_slot: {user_selected_slot}, current_date_time: {current_date_time}"
         )
-        logger.info(final_user_prompt)
+        logger.info(f"user_message {final_user_prompt}")
         selected_slot_success, selected_slot = await ChatGPTAgent().extract_date_time(
             final_user_prompt
         )
         logger.info(
-            f"Current Date Time is {current_time_str} and selected_slot_success {selected_slot_success} and user selected slot {selected_slot}"
+            f"current_date_time is {current_date_time} and user_selected_slot_success {selected_slot_success} and user_selected_slot {selected_slot}"
         )
         if not selected_slot_success:
             return JSONResponse(
@@ -173,7 +172,9 @@ async def bookSlot(request: Request):
             message = "Appointment booked successfully."
         else:
             message = result  # Use the API error message directly
-        logger.info(f"appointment booking result {result} and message {message}")
+        logger.info(
+            f"appointment booking result {result} and appointment booking message {message}"
+        )
         return JSONResponse(
             content={
                 "results": [
@@ -187,7 +188,7 @@ async def bookSlot(request: Request):
         )
 
     except HTTPException as he:  # Catch specific HTTPException
-        logger.critical(f"An HTTPException occurred: {he}")
+        logger.critical(f"An HTTPException occurred: {he}", exc_info=True)
         return JSONResponse(
             content={
                 "results": [{"toolCallId": None, "error": {"message": he.detail}}]
@@ -195,12 +196,13 @@ async def bookSlot(request: Request):
             status_code=he.status_code,
         )
     except Exception as e:  # Catch all other exceptions
-        logger.critical(f"An unexpected error occurred: {e}")
         error_message = (
             "Something went wrong when booking slot."
             if tool_call_id
             else "Internal Server Error"
         )
+        logger.error(error_message, exc_info=True)
+        logger.critical(f"An unexpected error occurred: {e}")
         status_code = 200 if tool_call_id else 500
         return JSONResponse(
             content={
