@@ -42,7 +42,7 @@ This is when the user would like to book:
 
 
 class ChatGPTAgent:
-    def __init__(self, model="gpt-3.5-turbo"):
+    def __init__(self, model="gpt-4o"):
         self.api_key = os.getenv("OPENAI_API_KEY")
 
         if not self.api_key:
