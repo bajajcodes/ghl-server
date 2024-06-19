@@ -11,6 +11,7 @@ from ghl_cls import GoHighLevelClient
 from utils.api import (
     fetch_and_process_slots,
     get_current_time_america_new_york,
+    parse_datetime_string,
     process_request,
     replace_placeholders,
 )
@@ -41,15 +42,41 @@ async def hello_webhook(request: Request):
 @app.post("/fetchslots")
 async def fetchSlots(request: Request):
     tool_call_id = None
+    edt_timezone = pytz.timezone("America/New_York")
     try:
         # Process request and get slots
         tool_call = await process_request(request)
         tool_call_id = tool_call.get("id")
-        edt_timezone = pytz.timezone("America/New_York")
+        function_arguments = tool_call.get("function", {}).get("arguments", {})
+        selected_slot_str = function_arguments.get("selectedSlot")
         current_datetime_edt = datetime.now(edt_timezone)
+        logger.info(
+            f"current_datetime_edt: {current_datetime_edt} selected_slot_str: {selected_slot_str}"
+        )
+        if selected_slot_str:
+            current_time_str = get_current_time_america_new_york()
+            final_user_prompt = replace_placeholders(
+                user_message, current_time_str, selected_slot_str
+            )
+            logger.info(final_user_prompt)
+            selected_slot_success, selected_slot = (
+                await ChatGPTAgent().extract_date_time(final_user_prompt)
+            )
+            logger.info(
+                f"selected_slot_success: {selected_slot_success} selected_slot: {selected_slot}"
+            )
+            current_datetime_edt = (
+                parse_datetime_string(selected_slot)
+                if selected_slot_success
+                else current_datetime_edt
+            )
+
         picked_slots = await fetch_and_process_slots(current_datetime_edt, edt_timezone)
         logger.info(
-            f"Current Date Tine is {current_datetime_edt} and Available slots are {picked_slots}"
+            f"selected_slot_str: {selected_slot_str} current_datetime_edt: {current_datetime_edt}"
+        )
+        logger.info(
+            f"Current Date Time is {current_datetime_edt} and Available slots are {picked_slots}"
         )
         # Success response
         return JSONResponse(
@@ -103,11 +130,15 @@ async def bookSlot(request: Request):
         final_user_prompt = replace_placeholders(
             user_message, current_time_str, selected_slot_str
         )
+        logger.info(
+            f"selected_slot_str: {selected_slot_str}, current_time_str: {current_time_str}"
+        )
+        logger.info(final_user_prompt)
         selected_slot_success, selected_slot = await ChatGPTAgent().extract_date_time(
             final_user_prompt
         )
         logger.info(
-            f"Current Date Tine is {current_time_str} and selected_slot_success {selected_slot_success} and user selected slot {selected_slot}"
+            f"Current Date Time is {current_time_str} and selected_slot_success {selected_slot_success} and user selected slot {selected_slot}"
         )
         if not selected_slot_success:
             return JSONResponse(
