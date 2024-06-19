@@ -48,7 +48,7 @@ async def fetchSlots(request: Request):
         # Process request and get slots
         tool_call = await process_request(request)
         tool_call_id = tool_call.get("id")
-        logger.info("tool_call_id: {tool_call_id}")
+        logger.info("tool_call_id: %s", tool_call_id)
         function_arguments = tool_call.get("function", {}).get("arguments", {})
         user_selected_slot = function_arguments.get("selectedSlot")
         current_datetime_edt = datetime.now(edt_timezone)
@@ -121,7 +121,7 @@ async def bookSlot(request: Request):
         # 1. Extract and validate request data
         tool_call = await process_request(request)
         tool_call_id = tool_call.get("id")
-        logger.info("tool_call_id: {tool_call_id}")
+        logger.info("tool_call_id: %s", tool_call_id)
         function_arguments = tool_call.get("function", {}).get("arguments", {})
 
         user_selected_slot = function_arguments.get("selectedSlot")
