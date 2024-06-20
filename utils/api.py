@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, time, timedelta
 
 import pytz
@@ -5,6 +6,8 @@ from fastapi import HTTPException, Request
 
 from ghl_cls import GoHighLevelClient
 from utils.ghl import datetime_str_to_epoch_ms, get_first_slots, get_next_business_day
+
+logger = logging.getLogger(__name__)
 
 
 def parse_datetime_string(datetime_str):
@@ -66,9 +69,9 @@ async def fetch_and_process_slots(current_datetime_edt, edt_timezone, days=1):
         datetime.combine(start_date.date() + timedelta(days=days), time(17, 0))
     )
     end_date = get_next_business_day(next_day_end_time, is_start_date=False)
-    # print(
-    #     f"start_date: {start_date} next_day_end_time:{next_day_end_time} end_date: {end_date}"
-    # )
+    logger.info(
+        f"start_date: {start_date} next_day_end_time:{next_day_end_time} end_date: {end_date}"
+    )
     formatted_start_date = (
         start_date.strftime("%Y-%m-%d %H:%M:%S")
         + start_date.strftime("%z")[:3]
@@ -81,12 +84,12 @@ async def fetch_and_process_slots(current_datetime_edt, edt_timezone, days=1):
         + ":"
         + end_date.strftime("%z")[3:]
     )
-    # print(
-    #     f"formatted_start_date: {formatted_start_date} formatted_end_date: {formatted_end_date}"
-    # )
+    logger.info(
+        f"formatted_start_date: {formatted_start_date} formatted_end_date: {formatted_end_date}"
+    )
     start_epoch_ms = datetime_str_to_epoch_ms(formatted_start_date)
     end_epoch_ms = datetime_str_to_epoch_ms(formatted_end_date)
-    # print(f"start_epoch_ms {start_epoch_ms} end_epoch_ms  {end_epoch_ms}")
+    logger.info(f"start_epoch_ms {start_epoch_ms} end_epoch_ms  {end_epoch_ms}")
     ghl = GoHighLevelClient()
     result, status_code = await ghl.get_appointment_slots(start_epoch_ms, end_epoch_ms)
 
@@ -94,14 +97,14 @@ async def fetch_and_process_slots(current_datetime_edt, edt_timezone, days=1):
         raise HTTPException(
             status_code=status_code, detail=result
         )  # Use more specific exceptions
-    # print(f"result: {result}")
+    logger.info(f"result: {result}")
     slots = get_first_slots(result, formatted_start_date)
     if len(slots) < 2:
         return await fetch_and_process_slots(
             current_datetime_edt=current_datetime_edt, edt_timezone=edt_timezone, days=2
         )
-    # print(f"slots: {slots}")
     picked_slots = [item[1] for item in slots]
+    logger.info(f"slots: {slots} picked_slots: {picked_slots}")
     return picked_slots
 
 

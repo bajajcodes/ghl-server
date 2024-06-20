@@ -42,14 +42,14 @@ This is when the user would like to book:
 
 
 class ChatGPTAgent:
-    def __init__(self, model="gpt-4o"):
+    def __init__(self):
         self.api_key = os.getenv("OPENAI_API_KEY")
 
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY must be set in environment or passed in")
 
         self.openai_client = openai.AsyncOpenAI(api_key=self.api_key)
-        self.model = model
+        self.model = "gpt-4o"
 
     async def extract_date_time(self, user_input):
         """
