@@ -54,10 +54,7 @@ async def process_request(request: Request):
     tool_calls = message.get("toolCalls", [])
 
     if not tool_calls:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid request format: missing 'message' or 'toolCalls'",
-        )
+        return None
 
     return tool_calls[0]  # Assuming only the first tool call is relevant
 

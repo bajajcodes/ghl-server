@@ -47,6 +47,9 @@ async def fetchSlots(request: Request):
     try:
         # Process request and get slots
         tool_call = await process_request(request)
+        if not tool_call:
+            raise Exception(detail="ToolCall is Missing")
+
         tool_call_id = tool_call.get("id")
         logger.info("tool_call_id: %s", tool_call_id)
         function_arguments = tool_call.get("function", {}).get("arguments", {})
@@ -93,7 +96,7 @@ async def fetchSlots(request: Request):
             content={
                 "results": [{"toolCallId": None, "error": {"message": he.detail}}]
             },
-            status_code=he.status_code,
+            status_code=200,
         )
     except Exception as e:  # Catch all other exceptions
         error_message = (
@@ -103,14 +106,13 @@ async def fetchSlots(request: Request):
         )
         logger.error(error_message, exc_info=True)
         logger.critical(f"An unexpected error occurred: {e}")
-        status_code = 200 if tool_call_id else 500
         return JSONResponse(
             content={
                 "results": [
                     {"toolCallId": tool_call_id, "error": {"message": error_message}}
                 ]
             },
-            status_code=status_code,
+            status_code=200,
         )
 
 
@@ -120,6 +122,8 @@ async def bookSlot(request: Request):
     try:
         # 1. Extract and validate request data
         tool_call = await process_request(request)
+        if not tool_call:
+            raise Exception(detail="ToolCall is Missing")
         tool_call_id = tool_call.get("id")
         logger.info("tool_call_id: %s", tool_call_id)
         function_arguments = tool_call.get("function", {}).get("arguments", {})
@@ -149,7 +153,7 @@ async def bookSlot(request: Request):
                         }
                     ]
                 },
-                status_code=400,
+                status_code=200,
             )
 
         # 2. Extract appointment details
@@ -184,7 +188,7 @@ async def bookSlot(request: Request):
                     }
                 ]
             },
-            status_code=status_code,
+            status_code=200,
         )
 
     except HTTPException as he:  # Catch specific HTTPException
@@ -193,7 +197,7 @@ async def bookSlot(request: Request):
             content={
                 "results": [{"toolCallId": None, "error": {"message": he.detail}}]
             },
-            status_code=he.status_code,
+            status_code=200,
         )
     except Exception as e:  # Catch all other exceptions
         error_message = (
@@ -203,14 +207,13 @@ async def bookSlot(request: Request):
         )
         logger.error(error_message, exc_info=True)
         logger.critical(f"An unexpected error occurred: {e}")
-        status_code = 200 if tool_call_id else 500
         return JSONResponse(
             content={
                 "results": [
                     {"toolCallId": tool_call_id, "error": {"message": error_message}}
                 ]
             },
-            status_code=status_code,
+            status_code=200,
         )
 
 
